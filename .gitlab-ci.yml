@@ -83,6 +83,7 @@ check devicetrees:
                        -e WLAN_VENDOR_REALTEK -m RTW89 -m RTW89_CORE
                        -m RTW89_PCI -m RTW89_8825B -m RTW89_8852BE
                        -m BINFMT_MISC
+                       -e ROCKCHIP_MPP_SERVICE -e ROCKCHIP_MPP_RKVDEC2
     - make -j$(nproc) $ADDITIONAL_BUILD_CMD bindeb-pkg
     - mkdir artifacts && dcmd mv ../*.changes artifacts/
   artifacts:
