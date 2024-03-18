@@ -11,14 +11,9 @@
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
 #include <soc/rockchip/pm_domains.h>
-#include <soc/rockchip/rockchip_dmc.h>
 #include <soc/rockchip/rockchip_iommu.h>
 
 #include "mpp_rkvdec2_link.h"
-
-#include "hack/mpp_rkvdec2_link_hack_rk3568.c"
-
-#define RKVDEC2_LINK_HACK_TASK_FLAG	(0xff)
 
 /* vdpu381 link hw info for rk3588 */
 struct rkvdec_link_info rkvdec_link_v2_hw_info = {
@@ -79,64 +74,6 @@ struct rkvdec_link_info rkvdec_link_v2_hw_info = {
 	},
 };
 
-/* vdpu34x link hw info for rk356x */
-struct rkvdec_link_info rkvdec_link_rk356x_hw_info = {
-	.tb_reg_num = 202,
-	.tb_reg_next = 0,
-	.tb_reg_r = 1,
-	.tb_reg_second_en = 8,
-
-	.part_w_num = 6,
-	.part_r_num = 2,
-	.part_w[0] = {
-		.tb_reg_off = 4,
-		.reg_start = 8,
-		.reg_num = 20,
-	},
-	.part_w[1] = {
-		.tb_reg_off = 24,
-		.reg_start = 64,
-		.reg_num = 52,
-	},
-	.part_w[2] = {
-		.tb_reg_off = 76,
-		.reg_start = 128,
-		.reg_num = 16,
-	},
-	.part_w[3] = {
-		.tb_reg_off = 92,
-		.reg_start = 160,
-		.reg_num = 40,
-	},
-	.part_w[4] = {
-		.tb_reg_off = 132,
-		.reg_start = 224,
-		.reg_num = 16,
-	},
-	.part_w[5] = {
-		.tb_reg_off = 148,
-		.reg_start = 256,
-		.reg_num = 16,
-	},
-	.part_r[0] = {
-		.tb_reg_off = 164,
-		.reg_start = 224,
-		.reg_num = 10,
-	},
-	.part_r[1] = {
-		.tb_reg_off = 174,
-		.reg_start = 258,
-		.reg_num = 28,
-	},
-	.tb_reg_int = 164,
-	.tb_reg_cycle = 179,
-	.hack_setup = 1,
-	.reg_status = {
-		.dec_num_mask = 0x3fffffff,
-		.err_flag_base = 0x010,
-		.err_flag_bit = BIT(31),
-	},
-};
 
 /* vdpu382 link hw info */
 struct rkvdec_link_info rkvdec_link_vdpu382_hw_info = {
@@ -488,12 +425,12 @@ static int rkvdec2_link_reset(struct mpp_dev *mpp)
 	mpp_reset_down_write(mpp->reset_group);
 	atomic_set(&mpp->reset_request, 0);
 
-	rockchip_save_qos(mpp->dev);
+//	rockchip_save_qos(mpp->dev);
 
 	if (mpp->hw_ops->reset)
 		mpp->hw_ops->reset(mpp);
 
-	rockchip_restore_qos(mpp->dev);
+//	rockchip_restore_qos(mpp->dev);
 
 	/* Note: if the domain does not change, iommu attach will be return
 	 * as an empty operation. Therefore, force to close and then open,
@@ -680,8 +617,8 @@ int rkvdec2_link_init(struct platform_device *pdev, struct rkvdec2_dev *dec)
 		list_add_tail(&table[i].link, &link_dec->unused_list);
 	}
 
-	if (dec->fix)
-		rkvdec2_link_hack_data_setup(dec->fix);
+//	if (dec->fix)
+//		rkvdec2_link_hack_data_setup(dec->fix);
 
 	mpp->fault_handler = rkvdec2_link_iommu_fault_handle;
 
@@ -936,19 +873,6 @@ static void rkvdec2_link_try_dequeue(struct mpp_dev *mpp)
 			break;
 
 		dequeue_cnt++;
-		/* check hack task only for rk356x*/
-		if (task->need_hack == RKVDEC2_LINK_HACK_TASK_FLAG) {
-			cancel_delayed_work_sync(&mpp_task->timeout_work);
-			list_move_tail(&task->table->link, &link_dec->unused_list);
-			list_del_init(&mpp_task->queue_link);
-			link_dec->task_running--;
-			link_dec->hack_task_running--;
-			kfree(task);
-			mpp_dbg_link("hack running %d irq_status %#08x timeout %d abort %d\n",
-				     link_dec->hack_task_running, irq_status,
-				     timeout_flag, abort_flag);
-			continue;
-		}
 
 		/*
 		 * if timeout/abort/force dequeue found, reset and stop hw first.
@@ -1009,50 +933,10 @@ static int mpp_task_queue(struct mpp_dev *mpp, struct mpp_task *mpp_task)
 	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 	struct rkvdec_link_dev *link_dec = dec->link_dec;
 	struct mpp_taskqueue *queue = mpp->queue;
-	struct rkvdec2_task *task = to_rkvdec2_task(mpp_task);
 
 	mpp_debug_enter();
 
 	rkvdec2_link_power_on(mpp);
-
-	/* hack for rk356x */
-	if (task->need_hack) {
-		u32 *tb_reg;
-		struct mpp_dma_buffer *table;
-		struct rkvdec2_task *hack_task;
-		struct rkvdec_link_info *info = link_dec->info;
-
-		/* need reserved 2 unused task for need hack task */
-		if (link_dec->task_running > (link_dec->task_capacity - 2))
-			return -EBUSY;
-
-		table = list_first_entry_or_null(&link_dec->unused_list,
-						 struct mpp_dma_buffer,
-						 link);
-		if (!table)
-			return -EBUSY;
-
-		hack_task = kzalloc(sizeof(*hack_task), GFP_KERNEL);
-
-		if (!hack_task)
-			return -ENOMEM;
-
-		mpp_task_init(mpp_task->session, &hack_task->mpp_task);
-		INIT_DELAYED_WORK(&hack_task->mpp_task.timeout_work,
-					rkvdec2_link_timeout_proc);
-
-		tb_reg = (u32 *)table->vaddr;
-		memset(tb_reg + info->part_r[0].tb_reg_off, 0, info->part_r[0].reg_num);
-		rkvdec2_3568_hack_fix_link(tb_reg + 4);
-		list_move_tail(&table->link, &link_dec->used_list);
-		hack_task->table = table;
-		hack_task->need_hack = RKVDEC2_LINK_HACK_TASK_FLAG;
-		rkvdec2_link_enqueue(link_dec, &hack_task->mpp_task);
-		mpp_taskqueue_pending_to_run(queue, &hack_task->mpp_task);
-		link_dec->hack_task_running++;
-		mpp_dbg_link("hack task send to hw, hack running %d\n",
-			     link_dec->hack_task_running);
-	}
 
 	/* process normal */
 	if (!rkvdec2_link_prepare(mpp, mpp_task))
@@ -1125,7 +1009,6 @@ int rkvdec2_link_process_task(struct mpp_session *session,
 {
 	struct mpp_task *task = NULL;
 	struct mpp_dev *mpp = session->mpp;
-	struct rkvdec_link_info *link_info = mpp->var->hw_info->link_info;
 	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 	struct rkvdec_link_dev *link_dec = dec->link_dec;
 
@@ -1133,15 +1016,6 @@ int rkvdec2_link_process_task(struct mpp_session *session,
 	if (!task) {
 		mpp_err("alloc_task failed.\n");
 		return -ENOMEM;
-	}
-
-	if (link_info->hack_setup) {
-		u32 fmt;
-		struct rkvdec2_task *dec_task = NULL;
-
-		dec_task = to_rkvdec2_task(task);
-		fmt = RKVDEC_GET_FORMAT(dec_task->reg[RKVDEC_REG_FORMAT_INDEX]);
-		dec_task->need_hack = (fmt == RKVDEC_FMT_H264D);
 	}
 
 	kref_init(&task->ref);
@@ -1331,7 +1205,10 @@ int rkvdec2_attach_ccu(struct device *dev, struct rkvdec2_dev *dec)
 
 	ccu = platform_get_drvdata(pdev);
 	if (!ccu)
+	{
+		dev_err(dev, "RETURN NOMEM\n");
 		return -ENOMEM;
+	}
 
 	ret = of_property_read_u32(dev->of_node, "rockchip,core-mask", &dec->core_mask);
 	if (ret)
@@ -1576,9 +1453,9 @@ static int rkvdec2_soft_ccu_reset(struct mpp_taskqueue *queue,
 
 		if (IS_REACHABLE(CONFIG_ROCKCHIP_SIP)) {
 			/* sip reset */
-			rockchip_dmcfreq_lock();
-			sip_smc_vpu_reset(i, 0, 0);
-			rockchip_dmcfreq_unlock();
+			//rockchip_dmcfreq_lock();
+			//sip_smc_vpu_reset(i, 0, 0);
+			//nnrockchip_dmcfreq_unlock();
 		} else {
 			rkvdec2_reset(mpp);
 		}
@@ -2135,8 +2012,8 @@ static int rkvdec2_hard_ccu_reset(struct mpp_taskqueue *queue, struct rkvdec2_cc
 				mpp_err("soft reset fail, int %08x\n", val);
 
 			// /* cru reset */
-			// dev_info(mpp->dev, "cru reset\n");
-			// rkvdec2_reset(mpp);
+			dev_info(mpp->dev, "cru reset\n");
+			rkvdec2_reset(mpp);
 		}
 #if IS_ENABLED(CONFIG_ROCKCHIP_SIP)
 		rockchip_dmcfreq_lock();
