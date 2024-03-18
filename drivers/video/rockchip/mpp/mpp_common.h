@@ -852,7 +852,8 @@ static inline int mpp_pmu_idle_request(struct mpp_dev *mpp, bool idle)
 	if (mpp->skip_idle)
 		return 0;
 
-	return rockchip_pmu_idle_request(mpp->dev, idle);
+	//skip_idle is set on rk3588
+	return 0;
 }
 
 static inline struct mpp_dev *

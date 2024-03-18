@@ -9,9 +9,7 @@
  *
  */
 #include <linux/delay.h>
-#include <linux/dma-buf-cache.h>
-#include <linux/dma-iommu.h>
-#include <linux/dma-mapping.h>
+#include <linux/dma-buf.h>
 #include <linux/iommu.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
@@ -292,7 +290,7 @@ int mpp_dma_map_kernel(struct mpp_dma_session *dma,
 		       struct mpp_dma_buffer *buffer)
 {
 	int ret;
-	void *vaddr;
+	struct iosys_map map;
 	struct dma_buf *dmabuf = buffer->dmabuf;
 
 	if (IS_ERR_OR_NULL(dmabuf))
@@ -304,14 +302,13 @@ int mpp_dma_map_kernel(struct mpp_dma_session *dma,
 		goto failed_access;
 	}
 
-	vaddr = dma_buf_vmap(dmabuf);
-	if (!vaddr) {
+	ret = dma_buf_vmap(dmabuf, &map);
+	if (ret) {
 		dev_dbg(dma->dev, "can't vmap the dma buffer\n");
-		ret = -EIO;
 		goto failed_vmap;
 	}
 
-	buffer->vaddr = vaddr;
+	buffer->vaddr = map.vaddr;
 
 	return 0;
 
