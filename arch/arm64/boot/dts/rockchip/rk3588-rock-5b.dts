@@ -509,6 +509,14 @@
 	status = "okay";
 };
 
+&rkvdec1 {
+	status = "okay";
+};
+
+&rkvdec1_mmu {
+	status = "okay";
+};
+
 &mpp_srv {
 	status = "okay";
 };
