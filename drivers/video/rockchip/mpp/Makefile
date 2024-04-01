@@ -12,5 +12,6 @@ rk_vcodec-objs := mpp_service.o mpp_common.o mpp_iommu.o
 CFLAGS_mpp_service.o += -DMPP_VERSION="\"$(MPP_REVISION)\""
 
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_RKVDEC2) += mpp_rkvdec2.o mpp_rkvdec2_link.o
+rk_vcodec-$(CONFIG_ROCKCHIP_MPP_RKVENC2) += mpp_rkvenc2.o
 
 obj-$(CONFIG_ROCKCHIP_MPP_SERVICE) += rk_vcodec.o
