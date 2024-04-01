@@ -1012,7 +1012,7 @@ static int rkvdec2_alloc_rcbbuf(struct platform_device *pdev, struct rkvdec2_dev
 		return -EINVAL;
 	}
 	/* alloc reserve iova for rcb */
-	//ret = iommu_dma_reserve_iova(dev, iova, rcb_size);
+	dma_alloc_coherent(dev, rcb_size, &iova, GFP_KERNEL);
 	//if (ret) {
 	//	dev_err(dev, "alloc rcb iova error.\n");
 	//	return ret;
