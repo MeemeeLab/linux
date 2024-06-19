@@ -83,52 +83,44 @@
 		regulator-boot-on;
 	};
 
-	sound0 {
-		compatible = "simple-audio-card";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,name = "ns4168-codec";
-		status = "okay";
-
-		simple-audio-card,cpu {
-			sound-dai = <&sai1a>;
-		};
-		simple-audio-card,codec {
-			sound-dai = <&spdif_out0>;
-		};
+	sai1a_sound {
+		compatible = "audio-graph-card";
+		label = "Internal Speaker";
+		dais = <&sai1a_port>;
 	};
 
-	sound1 {
-		compatible = "simple-audio-card";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,name = "hdmi-codec";
-		status = "okay";
-
-		simple-audio-card,cpu {
-			sound-dai = <&sai1b>;
-		};
-		simple-audio-card,codec {
-			sound-dai = <&spdif_out1>;
-		};
+	sai1b_sound {
+		compatible = "audio-graph-card";
+		label = "HDMI Audio";
+		dais = <&sai1b_port>;
 	};
 
-	spdif_out0: spdif-out0 {
-		#sound-dai-cells = <0>;
+	sai1a_out: spdif-out0 {
 		compatible = "linux,spdif-dit";
-		status = "okay";
+
+		sai1a_out_port: port@0 {
+			sai1a_out_endpoint: endpoint {
+				remote-endpoint = <&sai1a_endpoint>;
+			};
+		};
 	};
 
-	spdif_out1: spdif-out1 {
-		#sound-dai-cells = <0>;
+	sai1b_out: spdif-out1 {
 		compatible = "linux,spdif-dit";
-		status = "okay";
+
+		sai1b_out_port: port@0 {
+			sai1b_out_endpoint: endpoint {
+				remote-endpoint = <&sai1b_endpoint>;
+			};
+		};
 	};
 };
 
 &sai1 {
 	clocks = <&rcc SAI1>, <&scmi_clk CK_SCMI_PLL3_Q>, <&scmi_clk CK_SCMI_PLL3_R>;
 	clock-names = "pclk", "x8k", "x11k";
+
+	assigned-clock-rates = <24576000>;
 
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&sai1a_pins_mx>, <&sai1b_pins_mx>;
@@ -140,12 +132,26 @@
 	#clock-cells = <0>;
 	dma-names = "tx";
 	status = "okay";
+
+	sai1a_port: port@0 {
+		sai1a_endpoint: endpoint {
+			format = "i2s";
+			remote-endpoint = <&sai1a_out_endpoint>;
+		};
+	};
 };
 
 &sai1b {
 	#clock-cells = <0>;
 	dma-names = "tx";
 	status = "okay";
+
+	sai1b_port: port@0 {
+		sai1b_endpoint: endpoint {
+			format = "i2s";
+			remote-endpoint = <&sai1b_out_endpoint>;
+		};
+	};
 };
 
 &crc1 {
@@ -205,7 +211,6 @@
 			reset-gpios = <&gpioa 14 GPIO_ACTIVE_LOW>;
 		};
 	};
-
 };
 
 // bus i2c1
