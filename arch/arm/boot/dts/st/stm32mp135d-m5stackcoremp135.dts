@@ -393,14 +393,15 @@
 		compatible = "ilitek,ili9342c";
 		reg = <0>;
 		dc-gpios = <&gpioh 4 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpioi 0 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpioi 0 GPIO_ACTIVE_HIGH>;
 		spi-max-frequency = <74250000>;
 
-		rotate = <180>;
-		bgr;
+		rotate = <0>;
 		buswidth = <8>;
 		width = <320>;
 		height = <240>;
+
+		backlight = <&backlight>;
 
 		status = "okay";
 	};
