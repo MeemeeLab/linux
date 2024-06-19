@@ -16,4 +16,5 @@ obj-y					+= sunxi/
 obj-y					+= tegra/
 obj-y					+= ti/
 obj-y					+= xilinx/
+obj-y					+= lontium/
 obj-y					+= core.o governor.o
