@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menu "Lontium Semiconductor PM domains"
+
+config LONTIUM_LT8618SXB_PM
+	tristate "LT8618SXB power domain"
+	depends on PM
+	help
+	  Enable support for LT8618SXB HDMI TX PM driver.
+	  Say Y here if you have device with LT8618SXB.
+
+endmenu

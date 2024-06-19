@@ -18,5 +18,6 @@ source "drivers/pmdomain/sunxi/Kconfig"
 source "drivers/pmdomain/tegra/Kconfig"
 source "drivers/pmdomain/ti/Kconfig"
 source "drivers/pmdomain/xilinx/Kconfig"
+source "drivers/pmdomain/lontium/Kconfig"
 
 endmenu
