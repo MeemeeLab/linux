@@ -289,7 +289,7 @@
 	// /* spare dmas for other usage */
 	/delete-property/dmas;
 	/delete-property/dma-names;
-	touchscreen@38 {
+	touchscreen: ft6236@38 {
 			compatible = "focaltech,ft6236";
 			reg = <0x38>;
 			interrupt-parent = <&gpioi>;
@@ -299,7 +299,7 @@
 			status = "okay";
 	};
 
-	pcf8563@51 {
+	i2c_rtc: pcf8563@51 {
 		compatible = "nxp,pcf8563";
 		reg = <0x51>;
 		status = "okay";
