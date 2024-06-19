@@ -305,10 +305,21 @@
 		status = "okay";
 	};
 
-	backlight@34 {
-		compatible = "m5stack,axp2101";
+	pmu: axp2101@34 {
+		compatible = "x-powers,axp2101";
 		reg = <0x34>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 		status = "okay";
+
+		backlight: axp2101_bl {
+			compatible = "m5stack,axp2101-backlight";
+			status = "okay";
+		};
+		poweroff: axp2101_poweroff {
+			compatible = "x-powers,axp2101-poweroff";
+			status = "okay";
+		};
 	};
 
 	hdmi_tx: lt8618sxb@39 {
