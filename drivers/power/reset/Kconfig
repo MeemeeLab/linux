@@ -46,6 +46,13 @@ config POWER_RESET_ATC260X
 	  This driver provides power-off and restart support for a system
 	  through Actions Semi ATC260x series PMICs.
 
+config POWER_RESET_AXP2101_POWEROFF
+	bool "X-Powers AXP2101 poweroff driver"
+	depends on I2C
+	select MFD_SIMPLE_MFD_I2C
+	help
+	  This driver provides power-off for X-Powers AXP2101 PMU.
+
 config POWER_RESET_AXXIA
 	bool "LSI Axxia reset driver"
 	depends on ARCH_AXXIA
