@@ -164,8 +164,9 @@ config BACKLIGHT_ATMEL_LCDC
 	  in unless the board's description says it's wired that way.
 
 config BACKLIGHT_AXP2101_M5STACK
-	tristate "M5Stack AXP2101 Backlight Driver"
+	bool "M5Stack AXP2101 Backlight Driver"
 	depends on I2C
+	select MFD_SIMPLE_MFD_I2C
 	help
 	  Enables support for backlights connected to DLDO1 of AXP2101.
 	  If your device is made by M5Stack, say Y.
